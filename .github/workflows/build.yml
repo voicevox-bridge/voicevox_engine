@@ -374,7 +374,7 @@ jobs:
         if: matrix.artifact_name == 'windows-nvidia'
         id: cuda-toolkit
         with:
-          cuda: '11.3'
+          cuda: '11.3.1'
       
       - name: install pytorch with cuda
         if: matrix.artifact_name == 'windows-nvidia'
