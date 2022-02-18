@@ -369,6 +369,18 @@ jobs:
         run: |
           df -h
 
+      - name: Install cuda-toolkit
+        uses: Jimver/cuda-toolkit@v0.2.5
+        if: ${{ matrix.artifact_name == windows-nvidia }}
+        id: cuda-toolkit
+        with:
+          cuda: '11.3'
+      
+      - name: install pytorch with cuda
+        if: ${{ matrix.artifact_name == windows-nvidia }}
+        shell: bash
+        run: python -m pip install torch==1.10.2+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html
+
       - name: Generate licenses.json
         shell: bash
         run: python generate_licenses.py > licenses.json
