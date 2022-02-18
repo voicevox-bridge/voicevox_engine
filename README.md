@@ -1,3 +1,23 @@
+# VOICEVOX Bridge
+
+VOICEVOXとESPNet使用モデル（エンジン）との橋渡しをするソフトです。  
+基本的な機能はVOICEVOX Engineから引き継いでいますが、一部互換性が無いものがあります。
+
+- 削除
+  - モーフィング機能
+  - キャンセル可能な音声合成
+- 調整不可なパラメータ
+  - 音高
+  - 音素長
+  - 話速
+  - 抑揚
+- 変更
+  - runの引数
+
+## 音声合成エンジンの作成
+
+releasesのファイルを確認してください。
+
 # VOICEVOX ENGINE
 
 [![build](https://github.com/VOICEVOX/voicevox_engine/actions/workflows/build.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_engine/actions/workflows/build.yml)
@@ -173,9 +193,7 @@ python -m pip install -r requirements.txt
 ## 実行
 
 ```bash
-# 製品版 VOICEVOX でサーバーを起動
-VOICEVOX_DIR="C:/path/to/voicevox" # 製品版 VOICEVOX ディレクトリのパス
-python run.py --voicevox_dir=$VOICEVOX_DIR
+python run.py --engine_dir=/path/to/engine
 ```
 
 <!-- 差し替え可能な音声ライブラリまたはその仕様が公開されたらコメントを外す
@@ -188,53 +206,7 @@ python run.py --voicevox_dir=$VOICEVOX_DIR --voicelib_dir=$VOICELIB_DIR
 
 ```bash
 # モックでサーバー起動
-python run.py
-```
-
-### CPU スレッド数を指定する
-
-CPU スレッド数が未指定の場合は、論理コア数の半分か物理コア数が使われます。（殆どの CPU で、これは全体の処理能力の半分です）  
-もし IaaS 上で実行していたり、専用サーバーで実行している場合など、  
-VOICEVOX ENGINE が使う処理能力を調節したい場合は、CPU スレッド数を指定することで実現できます。
-
-- 実行時引数で指定する
-
-  ```bash
-  python run.py --voicevox_dir=$VOICEVOX_DIR --cpu_num_threads=4
-  ```
-
-- 環境変数で指定する
-  ```bash
-  export VV_CPU_NUM_THREADS=4
-  python run.py --voicevox_dir=$VOICEVOX_DIR
-  ```
-
-### 過去のバージョンのコアを使う
-VOICEVOX Core 0.5.4以降のコアを使用する事が可能です。  
-Macでのlibtorch版コアのサポートはしていません。
-
-#### 過去のバイナリを指定する
-製品版VOICEVOXもしくはコンパイル済みエンジンのディレクトリを`--voicevox_dir`引数で指定すると、そのバージョンのコアが使用されます。
-```bash
-python run.py --voicevox_dir="/path/to/voicevox"
-```
-Macでは、`DYLD_LIBRARY_PATH`の指定が必要です。
-```bash
-DYLD_LIBRARY_PATH="/path/to/voicevox" python run.py --voicevox_dir="/path/to/voicevox"
-```
-
-#### 音声ライブラリを直接指定する
-[VOICEVOX Coreのzipファイル](https://github.com/VOICEVOX/voicevox_core/releases)を解凍したディレクトリを`--voicelib_dir`引数で指定します。  
-また、コアのバージョンに合わせて、[libtorch](https://pytorch.org/)や[onnxruntime](https://github.com/microsoft/onnxruntime)のディレクトリを`--runtime_dir`引数で指定します。  
-ただし、システムの探索パス上にlibtorch、onnxruntimeがある場合、`--runtime_dir`引数の指定は不要です。  
-`--voicelib_dir`引数、`--runtime_dir`引数は複数回使用可能です。   
-APIエンドポイントでコアのバージョンを指定する場合は`core_version`引数を指定してください。（未指定の場合は最新のコアが使用されます）
-```bash
-python run.py --voicelib_dir="/path/to/voicevox_core" --runtime_dir="/path/to/libtorch_or_onnx"
-```
-Macでは、`--runtime_dir`引数の代わりに`DYLD_LIBRARY_PATH`の指定が必要です。
-```bash
-DYLD_LIBRARY_PATH="/path/to/onnx" python run.py --voicelib_dir="/path/to/voicevox_core"
+python run.py --enable_mock
 ```
 
 ## コードフォーマット
@@ -273,7 +245,7 @@ python generate_licenses.py > licenses.json
 python -m nuitka \
     --standalone \
     --plugin-enable=numpy \
-    --plugin-enable=multiprocessing \
+    --plugin-enable=torch \
     --follow-import-to=numpy \
     --follow-import-to=aiofiles \
     --include-package=uvicorn \
@@ -283,12 +255,9 @@ python -m nuitka \
     --include-data-file=licenses.json=./ \
     --include-data-file=presets.yaml=./ \
     --include-data-file=user.dic=./ \
-    --include-data-file=C:/path/to/cuda/*.dll=./ \
-    --include-data-file=C:/path/to/libtorch/*.dll=./ \
-    --include-data-file=C:/音声ライブラリへのパス/*.bin=./ \
-    --include-data-file=C:/音声ライブラリへのパス/metas.json=./ \
     --include-data-dir=.venv/Lib/site-packages/_soundfile_data=./_soundfile_data \
     --include-data-dir=speaker_info=./speaker_info \
+    --include-data-dir=espnet=./espnet \
     --msvc=14.2 \
     --follow-imports \
     --no-prefer-source-code \

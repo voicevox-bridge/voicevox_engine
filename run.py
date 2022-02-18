@@ -1,12 +1,6 @@
 import argparse
-
-# import asyncio
 import base64
 import json
-import multiprocessing
-import os
-
-# import sys
 import zipfile
 from distutils.version import LooseVersion
 from pathlib import Path
@@ -15,7 +9,7 @@ from typing import Dict, List, Optional
 
 import soundfile
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
 from starlette.responses import FileResponse
@@ -396,21 +390,24 @@ def generate_app(
         else:
             raise HTTPException(status_code=404, detail="該当する話者が見つかりません")
 
+        speaker_info_dir = get_engine(core_version).speaker_info_dir
+
         try:
-            policy = Path(f"speaker_info/{speaker_uuid}/policy.md").read_text("utf-8")
+            policy = (speaker_info_dir / f"{speaker_uuid}/policy.md").read_text("utf-8")
             portrait = b64encode_str(
-                Path(f"speaker_info/{speaker_uuid}/portrait.png").read_bytes()
+                (speaker_info_dir / f"{speaker_uuid}/portrait.png").read_bytes()
             )
             style_infos = []
             for style in speaker["styles"]:
                 id = style["id"]
                 icon = b64encode_str(
-                    Path(f"speaker_info/{speaker_uuid}/icons/{id}.png").read_bytes()
+                    (speaker_info_dir / f"{speaker_uuid}/icons/{id}.png").read_bytes()
                 )
                 voice_samples = [
                     b64encode_str(
-                        Path(
-                            "speaker_info/{}/voice_samples/{}_{}.wav".format(
+                        (
+                            speaker_info_dir
+                            / "{}/voice_samples/{}_{}.wav".format(
                                 speaker_uuid, id, str(j + 1).zfill(3)
                             )
                         ).read_bytes()
@@ -445,33 +442,16 @@ def generate_app(
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", type=str, default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=50021)
+    parser.add_argument("--engine_dir", type=Path, required=True)
     parser.add_argument("--use_gpu", action="store_true")
-    parser.add_argument("--voicevox_dir", type=Path, default=None)
-    parser.add_argument("--voicelib_dir", type=Path, default=None, action="append")
-    parser.add_argument("--runtime_dir", type=Path, default=None, action="append")
     parser.add_argument("--enable_mock", action="store_true")
-    parser.add_argument("--init_processes", type=int, default=2)
-
-    # 引数へcpu_num_threadsの指定がなければ、環境変数をロールします。
-    # 環境変数にもない場合は、Noneのままとします。
-    # VV_CPU_NUM_THREADSが空文字列でなく数値でもない場合、エラー終了します。
-    parser.add_argument(
-        "--cpu_num_threads", type=int, default=os.getenv("VV_CPU_NUM_THREADS") or None
-    )
 
     args = parser.parse_args()
 
-    cpu_num_threads: Optional[int] = args.cpu_num_threads
-
     synthesis_engines = make_synthesis_engines(
+        engine_dir=args.engine_dir,
         use_gpu=args.use_gpu,
-        voicelib_dirs=args.voicelib_dir,
-        voicevox_dir=args.voicevox_dir,
-        runtime_dirs=args.runtime_dir,
         enable_mock=args.enable_mock,
     )
     assert len(synthesis_engines) != 0, "音声合成エンジンがありません。"
@@ -479,6 +459,6 @@ if __name__ == "__main__":
 
     uvicorn.run(
         generate_app(synthesis_engines, latest_core_version),
-        host=args.host,
-        port=args.port,
+        host=synthesis_engines[latest_core_version].host,
+        port=synthesis_engines[latest_core_version].port,
     )

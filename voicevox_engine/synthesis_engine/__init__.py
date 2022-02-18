@@ -2,6 +2,7 @@ from .core_wrapper import CoreWrapper, load_runtime_lib
 from .make_synthesis_engines import make_synthesis_engines
 from .synthesis_engine import SynthesisEngine
 from .synthesis_engine_base import SynthesisEngineBase
+from .synthesis_engine_espnet import SynthesisEngineESPNet
 
 __all__ = [
     "CoreWrapper",
@@ -9,4 +10,5 @@ __all__ = [
     "make_synthesis_engines",
     "SynthesisEngine",
     "SynthesisEngineBase",
+    "SynthesisEngineESPNet",
 ]
