@@ -21,7 +21,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
 from starlette.responses import FileResponse
 
-# from voicevox_engine.cancellable_engine import CancellableEngine
 from voicevox_engine import __version__
 from voicevox_engine.kana_parser import create_kana, parse_kana
 from voicevox_engine.model import (
@@ -75,12 +74,6 @@ def generate_app(
     # モジュール側でlru_cacheを指定するとキャッシュを制御しにくいため、HTTPサーバ側で指定する
     # TODO: キャッシュを管理するモジュール側API・HTTP側APIを用意する
     synthesis_morphing_parameter = lru_cache(maxsize=4)(_synthesis_morphing_parameter)
-
-    # @app.on_event("startup")
-    # async def start_catch_disconnection():
-    #     if args.enable_cancellable_synthesis:
-    #         loop = asyncio.get_event_loop()
-    #         _ = loop.create_task(cancellable_engine.catch_disconnection())
 
     def get_engine(core_version: Optional[str]) -> SynthesisEngineBase:
         if core_version is None:
@@ -278,31 +271,6 @@ def generate_app(
             )
 
         return FileResponse(f.name, media_type="audio/wav")
-
-    @app.post(
-        "/cancellable_synthesis",
-        response_class=FileResponse,
-        responses={
-            200: {
-                "content": {
-                    "audio/wav": {"schema": {"type": "string", "format": "binary"}}
-                },
-            }
-        },
-        tags=["音声合成"],
-        summary="音声合成する（キャンセル可能）",
-    )
-    def cancellable_synthesis(query: AudioQuery, speaker: int, request: Request):
-        if not args.enable_cancellable_synthesis:
-            raise HTTPException(
-                status_code=404,
-                detail="実験的機能はデフォルトで無効になっています。使用するには引数を指定してください。",
-            )
-        f_name = cancellable_engine.synthesis(
-            query=query, speaker_id=speaker, request=request
-        )
-
-        return FileResponse(f_name, media_type="audio/wav")
 
     @app.post(
         "/multi_synthesis",
@@ -546,7 +514,6 @@ if __name__ == "__main__":
     parser.add_argument("--voicelib_dir", type=Path, default=None, action="append")
     parser.add_argument("--runtime_dir", type=Path, default=None, action="append")
     parser.add_argument("--enable_mock", action="store_true")
-    parser.add_argument("--enable_cancellable_synthesis", action="store_true")
     parser.add_argument("--init_processes", type=int, default=2)
 
     # 引数へcpu_num_threadsの指定がなければ、環境変数をロールします。
@@ -569,12 +536,6 @@ if __name__ == "__main__":
     )
     assert len(synthesis_engines) != 0, "音声合成エンジンがありません。"
     latest_core_version = str(max([LooseVersion(ver) for ver in synthesis_engines]))
-
-    cancellable_engine = None
-    # make_synthesis_engine周りの仕様が変わったので一旦cancellable機能を停止する
-    if args.enable_cancellable_synthesis:
-        # cancellable_engine = CancellableEngine(args, voicelib_dir, cpu_num_threads)
-        raise RuntimeError("現在のバージョンではcancellable機能を使用することはできません。")
 
     uvicorn.run(
         generate_app(synthesis_engines, latest_core_version),
