@@ -1,6 +1,7 @@
 import copy
 from abc import ABCMeta, abstractmethod
-from typing import List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional
 
 from .. import full_context_label
 from ..full_context_label import extract_full_context_label
@@ -86,6 +87,16 @@ class SynthesisEngineBase(metaclass=ABCMeta):
     @property
     @abstractmethod
     def supported_devices(self) -> Optional[str]:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def speaker_info_dir(self) -> Path:
+        raise NotImplementedError
+
+    @property
+    @abstractmethod
+    def default_sampling_rate(self) -> Dict[int, int]:
         raise NotImplementedError
 
     @abstractmethod

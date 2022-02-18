@@ -109,7 +109,7 @@ def generate_app(
             volumeScale=1,
             prePhonemeLength=0.1,
             postPhonemeLength=0.1,
-            outputSamplingRate=default_sampling_rate,
+            outputSamplingRate=default_sampling_rate[speaker],
             outputStereo=False,
             kana=create_kana(accent_phrases),
         )
@@ -148,7 +148,7 @@ def generate_app(
             volumeScale=selected_preset.volumeScale,
             prePhonemeLength=selected_preset.prePhonemeLength,
             postPhonemeLength=selected_preset.postPhonemeLength,
-            outputSamplingRate=default_sampling_rate,
+            outputSamplingRate=default_sampling_rate[selected_preset.style_id],
             outputStereo=False,
             kana=create_kana(accent_phrases),
         )

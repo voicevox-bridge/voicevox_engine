@@ -1,8 +1,11 @@
 from itertools import chain
+from pathlib import Path
 from typing import List, Optional, Tuple
 
 import numpy
 from scipy.signal import resample
+
+from voicevox_engine.utility import engine_root
 
 from ..acoustic_feature_extractor import OjtPhoneme
 from ..model import AccentPhrase, AudioQuery, Mora
@@ -173,7 +176,6 @@ class SynthesisEngine(SynthesisEngineBase):
 
         self._speakers = speakers
         self._supported_devices = supported_devices
-        self.default_sampling_rate = 24000
 
     @property
     def speakers(self) -> str:
@@ -182,6 +184,14 @@ class SynthesisEngine(SynthesisEngineBase):
     @property
     def supported_devices(self) -> Optional[str]:
         return self._supported_devices
+
+    @property
+    def speaker_info_dir(self) -> Path:
+        return engine_root() / "speaker_info"
+
+    @property
+    def default_sampling_rate(self) -> int:
+        return {i: 24000 for i in range(100)}
 
     def replace_phoneme_length(
         self, accent_phrases: List[AccentPhrase], speaker_id: int
@@ -464,10 +474,12 @@ class SynthesisEngine(SynthesisEngineBase):
         wave *= query.volumeScale
 
         # 出力サンプリングレートがデフォルト(decode forwarderによるもの、24kHz)でなければ、それを適用する
-        if query.outputSamplingRate != self.default_sampling_rate:
+        if query.outputSamplingRate != self.default_sampling_rate[speaker_id]:
             wave = resample(
                 wave,
-                query.outputSamplingRate * len(wave) // self.default_sampling_rate,
+                query.outputSamplingRate
+                * len(wave)
+                // self.default_sampling_rate[speaker_id],
             )
 
         # ステレオ変換
