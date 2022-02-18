@@ -125,48 +125,6 @@ curl -s \
 - `id`は重複してはいけません
 - エンジン起動後にファイルを書き換えるとエンジンに反映されます
 
-### 2 人の話者でモーフィングするサンプルコード
-
-`/synthesis_morphing`では、2 人の話者でそれぞれ合成された音声を元に、モーフィングした音声を生成します。
-
-```bash
-echo -n "モーフィングを利用することで、２つの声を混ぜることができます。" > text.txt
-
-curl -s \
-    -X POST \
-    "localhost:50021/audio_query?speaker=0"\
-    --get --data-urlencode text@text.txt \
-    > query.json
-
-# 元の話者での合成結果
-curl -s \
-    -H "Content-Type: application/json" \
-    -X POST \
-    -d @query.json \
-    "localhost:50021/synthesis?speaker=0" \
-    > audio.wav
-
-export MORPH_RATE=0.5
-
-# 話者2人分の音声合成+WORLDによる音声分析が入るため時間が掛かるので注意
-curl -s \
-    -H "Content-Type: application/json" \
-    -X POST \
-    -d @query.json \
-    "localhost:50021/synthesis_morphing?base_speaker=0&target_speaker=1&morph_rate=$MORPH_RATE" \
-    > audio.wav
-
-export MORPH_RATE=0.9
-
-# query、base_speaker、target_speakerが同じ場合はキャッシュが使用されるため比較的高速に生成される
-curl -s \
-    -H "Content-Type: application/json" \
-    -X POST \
-    -d @query.json \
-    "localhost:50021/synthesis_morphing?base_speaker=0&target_speaker=1&morph_rate=$MORPH_RATE" \
-    > audio.wav
-```
-
 ### 話者の追加情報を取得するサンプルコード
 
 追加情報の中の portrait.png を取得するコードです。  
@@ -178,13 +136,6 @@ curl -s -X GET "localhost:50021/speaker_info?speaker_uuid=7ffcb7ce-00ec-4bdc-82c
     | base64 -d \
     > portrait.png
 ```
-
-### キャンセル可能な音声合成
-
-`/cancellable_synthesis`では通信を切断した場合に即座に計算リソースが開放されます。  
-(`/synthesis`では通信を切断しても最後まで音声合成の計算が行われます)  
-この API は実験的機能であり、エンジン起動時に引数で`--enable_cancellable_synthesis`を指定しないと有効化されません。  
-音声合成に必要なパラメータは`/synthesis`と同様です。
 
 ## Docker イメージ
 

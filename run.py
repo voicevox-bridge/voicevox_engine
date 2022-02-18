@@ -9,7 +9,6 @@ import os
 # import sys
 import zipfile
 from distutils.version import LooseVersion
-from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryFile
 from typing import Dict, List, Optional
@@ -31,10 +30,6 @@ from voicevox_engine.model import (
     Speaker,
     SpeakerInfo,
     SupportedDevicesInfo,
-)
-from voicevox_engine.morphing import synthesis_morphing
-from voicevox_engine.morphing import (
-    synthesis_morphing_parameter as _synthesis_morphing_parameter,
 )
 from voicevox_engine.preset import Preset, PresetLoader
 from voicevox_engine.synthesis_engine import SynthesisEngineBase, make_synthesis_engines
@@ -69,11 +64,6 @@ def generate_app(
     preset_loader = PresetLoader(
         preset_path=root_dir / "presets.yaml",
     )
-
-    # キャッシュを有効化
-    # モジュール側でlru_cacheを指定するとキャッシュを制御しにくいため、HTTPサーバ側で指定する
-    # TODO: キャッシュを管理するモジュール側API・HTTP側APIを用意する
-    synthesis_morphing_parameter = lru_cache(maxsize=4)(_synthesis_morphing_parameter)
 
     def get_engine(core_version: Optional[str]) -> SynthesisEngineBase:
         if core_version is None:
@@ -319,56 +309,6 @@ def generate_app(
                         zip_file.writestr(f"{str(i+1).zfill(3)}.wav", wav_file.read())
 
         return FileResponse(f.name, media_type="application/zip")
-
-    @app.post(
-        "/synthesis_morphing",
-        response_class=FileResponse,
-        responses={
-            200: {
-                "content": {
-                    "audio/wav": {"schema": {"type": "string", "format": "binary"}}
-                },
-            }
-        },
-        tags=["音声合成"],
-        summary="2人の話者でモーフィングした音声を合成する",
-    )
-    def _synthesis_morphing(
-        query: AudioQuery,
-        base_speaker: int,
-        target_speaker: int,
-        morph_rate: float = Query(..., ge=0.0, le=1.0),  # noqa: B008
-        core_version: Optional[str] = None,
-    ):
-        """
-        指定された2人の話者で音声を合成、指定した割合でモーフィングした音声を得ます。
-        モーフィングの割合は`morph_rate`で指定でき、0.0でベースの話者、1.0でターゲットの話者に近づきます。
-        """
-        engine = get_engine(core_version)
-
-        # 生成したパラメータはキャッシュされる
-        morph_param = synthesis_morphing_parameter(
-            engine=engine,
-            query=query,
-            base_speaker=base_speaker,
-            target_speaker=target_speaker,
-        )
-
-        morph_wave = synthesis_morphing(
-            morph_param=morph_param,
-            morph_rate=morph_rate,
-            output_stereo=query.outputStereo,
-        )
-
-        with NamedTemporaryFile(delete=False) as f:
-            soundfile.write(
-                file=f,
-                data=morph_wave,
-                samplerate=morph_param.fs,
-                format="WAV",
-            )
-
-        return FileResponse(f.name, media_type="audio/wav")
 
     @app.post(
         "/connect_waves",
