@@ -121,11 +121,13 @@ jobs:
             --include-package=uvicorn \
             --include-package=anyio \
             --include-package-data=pyopenjtalk \
+            --include-package-data=llvmlite \
             --include-package-data=scipy \
             --include-data-file=../licenses.json=./ \
             --include-data-file=../presets.yaml=./ \
             --include-data-file=../user.dic=./ \
             --include-data-file=${{ env.pythonLocation }}/lib/python*/site-packages/scipy/.dylibs/*.dylib=./scipy/.dylibs/ \
+            --include-data-file=${{ env.pythonLocation }}/lib/python*/site-packages/llvmlite/binding/*.dylib=./ \
             --include-data-file=${{ env.pythonLocation }}/lib/python*/site-packages/_soundfile_data/*=./_soundfile_data/ \
             --include-data-dir=../speaker_info=./speaker_info \
             --include-data-dir=../espnet=./espnet \
@@ -459,6 +461,7 @@ jobs:
 
           # pysoundfile
           ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/_soundfile_data" artifact/
+          ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/llvmlite/binding/llvmlite.dll" artifact/
 
       # FIXME: versioned name may be useful; but
       # actions/download-artifact and dawidd6/download-artifact do not support

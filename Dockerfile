@@ -252,6 +252,7 @@ RUN <<EOF
             --include-package=anyio \
             --include-package-data=pyopenjtalk \
             --include-package-data=scipy \
+            --include-data-file=/home/user/.local/lib/python*/site-packages/llvmlite/binding/*.so=./ \
             --include-data-file=/opt/voicevox_engine/licenses.json=./ \
             --include-data-file=/opt/voicevox_engine/presets.yaml=./ \
             --include-data-file=/opt/voicevox_engine/user.dic=./ \
