@@ -16,6 +16,8 @@ class NuitkaPluginFixBuild(NuitkaPluginBase):
         elif module_name == "numba.core.decorators":
             source_code = dedent(
                 """\
+                from numba.stencils.stencil import stencil
+
                 def jit(func, *args, **kwargs):
                     return func
 
