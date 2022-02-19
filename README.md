@@ -246,6 +246,7 @@ python -m nuitka \
     --standalone \
     --plugin-enable=numpy \
     --plugin-enable=torch \
+    --user-plugin=FixTorchBuildPlugin.py \
     --enable-plugin=anti-bloat \
     --follow-import-to=numpy \
     --follow-import-to=aiofiles \

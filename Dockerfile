@@ -128,6 +128,7 @@ ADD ./docs /opt/voicevox_engine/docs
 ADD ./run.py ./generate_licenses.py ./presets.yaml ./user.dic /opt/voicevox_engine/
 ADD ./speaker_info /opt/voicevox_engine/speaker_info
 ADD ./espnet /opt/voicevox_engine/espnet
+ADD ./FixTorchBuildPlugin.py /opt/voicevox_engine/
 
 # Replace version
 ARG VOICEVOX_ENGINE_VERSION=latest
@@ -243,6 +244,7 @@ RUN <<EOF
             --standalone \
             --plugin-enable=numpy \
             --plugin-enable=torch \
+            --user-plugin=FixTorchBuildPlugin.py \
             --enable-plugin=anti-bloat \
             --follow-import-to=numpy \
             --follow-import-to=aiofiles \
