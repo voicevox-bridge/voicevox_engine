@@ -244,7 +244,7 @@ RUN <<EOF
             --standalone \
             --plugin-enable=numpy \
             --plugin-enable=torch \
-            --user-plugin=FixTorchBuildPlugin.py \
+            --user-plugin=/opt/voicevox_engine/FixTorchBuildPlugin.py \
             --enable-plugin=anti-bloat \
             --follow-import-to=numpy \
             --follow-import-to=aiofiles \
