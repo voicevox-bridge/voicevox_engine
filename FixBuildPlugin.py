@@ -1,8 +1,8 @@
 from nuitka.plugins.PluginBase import NuitkaPluginBase
 
 
-class NuitkaPluginFixTorchBuild(NuitkaPluginBase):
-    plugin_name = "fix-torch-build"
+class NuitkaPluginFixBuild(NuitkaPluginBase):
+    plugin_name = "fix-build"
 
     @staticmethod
     def onModuleSourceCode(module_name, source_code):
