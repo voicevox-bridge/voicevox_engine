@@ -246,6 +246,7 @@ python -m nuitka \
     --standalone \
     --plugin-enable=numpy \
     --plugin-enable=torch \
+    --enable-plugin=anti-bloat \
     --follow-import-to=numpy \
     --follow-import-to=aiofiles \
     --include-package=uvicorn \
@@ -260,6 +261,8 @@ python -m nuitka \
     --include-data-dir=espnet=./espnet \
     --msvc=14.2 \
     --follow-imports \
+    --nofollow-import-to=torchvision \
+    --nofollow-import-to=torchaudio \
     --no-prefer-source-code \
     run.py
 ```

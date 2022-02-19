@@ -243,6 +243,7 @@ RUN <<EOF
             --standalone \
             --plugin-enable=numpy \
             --plugin-enable=torch \
+            --enable-plugin=anti-bloat \
             --follow-import-to=numpy \
             --follow-import-to=aiofiles \
             --include-package=uvicorn \
@@ -256,6 +257,8 @@ RUN <<EOF
             --include-data-dir=/opt/voicevox_engine/espnet=./espnet \
             --follow-imports \
             --no-prefer-source-code \
+            --nofollow-import-to=torchvision \
+            --nofollow-import-to=torchaudio \
             /opt/voicevox_engine/run.py
 
         chmod +x /opt/voicevox_engine_build/run.dist/run
