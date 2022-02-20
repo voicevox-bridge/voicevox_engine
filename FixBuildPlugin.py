@@ -18,20 +18,28 @@ class NuitkaPluginFixBuild(NuitkaPluginBase):
                 """\
                 from numba.stencils.stencil import stencil
 
-                def jit(func, *args, **kwargs):
-                    return func
+                def _wrapper(f):
+                    return f
 
-                def generated_jit(func, *args, **kwargs):
-                    return func
+                def jit(*args, **kwargs):
+                    return _wrapper
 
-                def njit(func, *args, **kwargs):
-                    return func
+                def generated_jit(*args, **kwargs):
+                    return _wrapper
 
-                def cfunc(func, *args, **kwargs):
-                    return func
+                def njit(*args, **kwargs):
+                    return _wrapper
+
+                def cfunc(*args, **kwargs):
+                    return _wrapper
 
                 def jit_module(*args, **kwargs):
                     pass
                 """
+            )
+        elif module_name == "torch._jit_internal":
+            source_code.replace(
+                'warnings.warn(f"Unable to retrieve source',
+                '# warnings.warn(f"Unable to retrieve source',
             )
         return source_code
