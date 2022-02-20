@@ -127,7 +127,6 @@ ADD ./voicevox_engine /opt/voicevox_engine/voicevox_engine
 ADD ./docs /opt/voicevox_engine/docs
 ADD ./run.py ./generate_licenses.py ./presets.yaml ./user.dic /opt/voicevox_engine/
 ADD ./speaker_info /opt/voicevox_engine/speaker_info
-ADD ./espnet /opt/voicevox_engine/espnet
 ADD ./FixBuildPlugin.py /opt/voicevox_engine/
 
 # Replace version
@@ -257,12 +256,20 @@ RUN <<EOF
             --include-data-file=/opt/voicevox_engine/presets.yaml=./ \
             --include-data-file=/opt/voicevox_engine/user.dic=./ \
             --include-data-dir=/opt/voicevox_engine/speaker_info=./speaker_info \
-            --include-data-dir=/opt/voicevox_engine/espnet=./espnet \
             --follow-imports \
             --no-prefer-source-code \
             --nofollow-import-to=torchvision \
             --nofollow-import-to=torchaudio \
             /opt/voicevox_engine/run.py
+
+        mkdir /opt/voicevox_engine_build/run.dist/espnet
+        cp /home/user/.local/lib/python*/site-packages/espnet/version.txt /opt/voicevox_engine_build/run.dist/espnet/
+
+        mkdir -p /opt/voicevox_engine_build/run.dist/librosa/util
+        cp -r /home/user/.local/lib/python*/site-packages/librosa/util/example_data /opt/voicevox_engine_build/run.dist/librosa/util/
+
+        mkdir /opt/voicevox_engine_build/run.dist/resampy
+        cp -r /home/user/.local/lib/python*/site-packages/resampy/data /opt/voicevox_engine_build/run.dist/resampy/
 
         chmod +x /opt/voicevox_engine_build/run.dist/run
 EOD

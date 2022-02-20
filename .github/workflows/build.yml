@@ -130,7 +130,6 @@ jobs:
             --include-data-file=${{ env.pythonLocation }}/lib/python*/site-packages/llvmlite/binding/*.dylib=./ \
             --include-data-file=${{ env.pythonLocation }}/lib/python*/site-packages/_soundfile_data/*=./_soundfile_data/ \
             --include-data-dir=../speaker_info=./speaker_info \
-            --include-data-dir=../espnet=./espnet \
             --follow-imports \
             --nofollow-import-to=torchvision \
             --nofollow-import-to=torchaudio \
@@ -153,6 +152,23 @@ jobs:
       - name: Fix the rpaths of the .dylib files in the distribution
         run: |
           python build_util/macos/fix_rpaths.py build/run.dist/
+      
+      - name: Prepare some files
+        shell: bash
+        run: |
+          set -eux
+
+          # espnet
+          mkdir build/run.dist/espnet
+          ln -sf "${{ env.pythonLocation }}/lib/python*/site-packages/espnet/version.txt" build/run.dist/espnet/
+
+          # librosa
+          mkdir -p build/run.dist/librosa/util
+          ln -sf "${{ env.pythonLocation }}/lib/python*/site-packages/librosa/util/example_data" build/run.dist/librosa/util/
+
+          # resampy
+          mkdir build/run.dist/resampy
+          ln -sf "${{ env.pythonLocation }}/lib/python*/site-packages/resampy/data" build/run.dist/resampy/
 
       # FIXME: versioned name may be useful; but
       # actions/download-artifact and dawidd6/download-artifact do not support
@@ -432,7 +448,6 @@ jobs:
             --include-data-file="user.dic=./" \
             --include-data-file="presets.yaml=./" \
             --include-data-dir="speaker_info=./speaker_info" \
-            --include-data-dir="espnet=./espnet" \
             --msvc=14.2 \
             --follow-imports \
             --nofollow-import-to=torchvision \
@@ -462,6 +477,18 @@ jobs:
           # pysoundfile
           ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/_soundfile_data" artifact/
           ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/llvmlite/binding/llvmlite.dll" artifact/
+
+          # espnet
+          mkdir artifact/espnet
+          ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/espnet/version.txt" artifact/espnet/
+
+          # librosa
+          mkdir -p artifact/librosa/util
+          ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/librosa/util/example_data" artifact/librosa/util/
+
+          # resampy
+          mkdir artifact/resampy
+          ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/resampy/data" artifact/resampy/
 
       # FIXME: versioned name may be useful; but
       # actions/download-artifact and dawidd6/download-artifact do not support
