@@ -123,6 +123,7 @@ jobs:
             --include-package-data=pyopenjtalk \
             --include-package-data=llvmlite \
             --include-package-data=scipy \
+            --include-package-data=sklearn \
             --include-data-file=../licenses.json=./ \
             --include-data-file=../presets.yaml=./ \
             --include-data-file=../user.dic=./ \
@@ -444,6 +445,7 @@ jobs:
             --include-package=anyio \
             --include-package-data=pyopenjtalk \
             --include-package-data=scipy \
+            --include-package-data=sklearn \
             --include-data-file="licenses.json=./" \
             --include-data-file="user.dic=./" \
             --include-data-file="presets.yaml=./" \
