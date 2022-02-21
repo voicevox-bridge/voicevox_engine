@@ -103,7 +103,7 @@ nltk==3.7
     #   g2p-en
 nodeenv==1.6.0
     # via pre-commit
-nuitka==0.6.17.4
+nuitka==0.7
     # via -r requirements-dev.in
 numba==0.55.1
     # via
