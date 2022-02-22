@@ -38,18 +38,12 @@ class NuitkaPluginFixBuild(NuitkaPluginBase):
                 """
             )
         elif module_name == "torch._jit_internal":
-            source_code.replace(
+            source_code = source_code.replace(
                 'warnings.warn(f"Unable to retrieve source',
-                '#',
+                "#",
             )
         elif module_name == "librosa.decompose":
-            source_code.replace(
-                'import sklearn.decomposition',
-                '#'
-            )
+            source_code = source_code.replace("import sklearn.decomposition", "#")
         elif module_name == "librosa.segment":
-            source_code.replace(
-                'import sklearn',
-                '#'
-            )
+            source_code = source_code.replace("import sklearn", "#")
         return source_code
