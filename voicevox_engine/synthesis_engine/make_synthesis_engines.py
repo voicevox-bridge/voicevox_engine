@@ -26,6 +26,8 @@ def make_synthesis_engines(
     """
     synthesis_engines = {}
     try:
+        if engine_dir is None:
+            raise Exception("engine_dirが指定されていません")
         _synthesis_engine = SynthesisEngineESPNet(
             engine_dir=engine_dir, use_gpu=use_gpu
         )

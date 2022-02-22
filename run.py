@@ -443,7 +443,9 @@ def generate_app(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--engine_dir", type=Path, required=True)
+    parser.add_argument("--host", type=str, default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=50021)
+    parser.add_argument("--engine_dir", type=Path, default=None)
     parser.add_argument("--use_gpu", action="store_true")
     parser.add_argument("--enable_mock", action="store_true")
 
@@ -459,6 +461,6 @@ if __name__ == "__main__":
 
     uvicorn.run(
         generate_app(synthesis_engines, latest_core_version),
-        host=synthesis_engines[latest_core_version].host,
-        port=synthesis_engines[latest_core_version].port,
+        host=args.host,
+        port=args.port,
     )
