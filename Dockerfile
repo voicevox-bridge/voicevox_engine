@@ -272,6 +272,9 @@ RUN <<EOF
         mkdir /opt/voicevox_engine_build/run.dist/resampy
         cp -r /home/user/.local/lib/python*/site-packages/resampy/data /opt/voicevox_engine_build/run.dist/resampy/
 
+        mkdir /opt/voicevox_engine_build/run.dist/jamo
+        cp -r /home/user/.local/lib/python*/site-packages/jamo/data /opt/voicevox_engine_build/run.dist/jamo/
+
         chmod +x /opt/voicevox_engine_build/run.dist/run
 EOD
     chmod +x /build.sh

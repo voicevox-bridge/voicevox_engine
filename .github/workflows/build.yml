@@ -323,6 +323,10 @@ jobs:
           mkdir artifact/resampy
           ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/resampy/data" artifact/resampy/
 
+          # jamo
+          mkdir artifact/jamo
+          ln -sf "${{ env.PYTHON_SITE_PACKAGES_DIR }}/jamo/data" artifact/jamo/
+
       # FIXME: versioned name may be useful; but
       # actions/download-artifact and dawidd6/download-artifact do not support
       # wildcard / forward-matching yet.
