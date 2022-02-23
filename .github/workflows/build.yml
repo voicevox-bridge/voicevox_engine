@@ -124,12 +124,12 @@ jobs:
           nuitka_cache_path: nuitka_cache
           pip_cache_path: ~\AppData\Local\pip\Cache
         # Windows NVIDIA GPU
-        - os: windows-2019
-          python_architecture: 'x64'
-          ccache_url: https://github.com/ccache/ccache/releases/download/v4.4.1/ccache-4.4.1-windows-64.zip
-          artifact_name: windows-nvidia
-          nuitka_cache_path: nuitka_cache
-          pip_cache_path: ~\AppData\Local\pip\Cache
+        #- os: windows-2019
+        #  python_architecture: 'x64'
+        #  ccache_url: https://github.com/ccache/ccache/releases/download/v4.4.1/ccache-4.4.1-windows-64.zip
+        #  artifact_name: windows-nvidia
+        #  nuitka_cache_path: nuitka_cache
+        #  pip_cache_path: ~\AppData\Local\pip\Cache
 
     runs-on: ${{ matrix.os }}
 
@@ -351,7 +351,7 @@ jobs:
           - linux-cpu
           - linux-nvidia
           - windows-cpu
-          - windows-nvidia
+          #- windows-nvidia
     steps:
       - uses: actions/checkout@v2
 
