@@ -186,6 +186,37 @@ def generate_licenses() -> List[License]:
                     "https://bitbucket.org/pypa/distlib/raw/7d93712134b28401407da27382f2b6236c87623a/LICENSE.txt"  # noqa: B950
                 ) as res:
                     license.text = res.read().decode()
+            elif license.name.lower() == "espnet-tts-frontend":
+                with urllib.request.urlopen(
+                    "https://raw.githubusercontent.com/espnet/espnet/master/LICENSE"
+                ) as res:
+                    license.text = res.read().decode()
+            elif license.name.lower() == "jamo":
+                with urllib.request.urlopen(
+                    "https://raw.githubusercontent.com/JDongian/python-jamo/master/LICENSE"
+                ) as res:
+                    license.text = res.read().decode()
+            elif license.name.lower() == "sentencepiece":
+                with urllib.request.urlopen(
+                    "https://raw.githubusercontent.com/google/sentencepiece/master/LICENSE"
+                ) as res:
+                    license.text = res.read().decode()
+            elif license.name.lower() == "torch-complex":
+                # https://github.com/kamo-naoyuki/pytorch_complex/blob/master/setup.py
+                # Apache Software Licenseであることが明記されているのでこれに従う
+                license.text = """Copyright 2021 Naoyuki Kamo
+
+                Licensed under the Apache License, Version 2.0 (the "License");
+                you may not use this file except in compliance with the License.
+                You may obtain a copy of the License at
+
+                    http://www.apache.org/licenses/LICENSE-2.0
+
+                Unless required by applicable law or agreed to in writing, software
+                distributed under the License is distributed on an "AS IS" BASIS,
+                WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+                See the License for the specific language governing permissions and
+                limitations under the License."""
             else:
                 # ライセンスがpypiに無い
                 raise Exception(f"No License info provided for {license.name}")

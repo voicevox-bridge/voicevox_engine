@@ -1,27 +1,19 @@
 import argparse
-
-# import asyncio
 import base64
 import json
-import multiprocessing
-import os
-
-# import sys
 import zipfile
 from distutils.version import LooseVersion
-from functools import lru_cache
 from pathlib import Path
 from tempfile import NamedTemporaryFile, TemporaryFile
 from typing import Dict, List, Optional
 
 import soundfile
 import uvicorn
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
 from starlette.responses import FileResponse
 
-# from voicevox_engine.cancellable_engine import CancellableEngine
 from voicevox_engine import __version__
 from voicevox_engine.kana_parser import create_kana, parse_kana
 from voicevox_engine.model import (
@@ -33,13 +25,13 @@ from voicevox_engine.model import (
     SpeakerInfo,
     SupportedDevicesInfo,
 )
-from voicevox_engine.morphing import synthesis_morphing
-from voicevox_engine.morphing import (
-    synthesis_morphing_parameter as _synthesis_morphing_parameter,
-)
 from voicevox_engine.preset import Preset, PresetLoader
 from voicevox_engine.synthesis_engine import SynthesisEngineBase, make_synthesis_engines
-from voicevox_engine.utility import ConnectBase64WavesException, connect_base64_waves
+from voicevox_engine.utility import (
+    ConnectBase64WavesException,
+    connect_base64_waves,
+    engine_root,
+)
 
 
 def b64encode_str(s):
@@ -71,17 +63,6 @@ def generate_app(
         preset_path=root_dir / "presets.yaml",
     )
 
-    # キャッシュを有効化
-    # モジュール側でlru_cacheを指定するとキャッシュを制御しにくいため、HTTPサーバ側で指定する
-    # TODO: キャッシュを管理するモジュール側API・HTTP側APIを用意する
-    synthesis_morphing_parameter = lru_cache(maxsize=4)(_synthesis_morphing_parameter)
-
-    # @app.on_event("startup")
-    # async def start_catch_disconnection():
-    #     if args.enable_cancellable_synthesis:
-    #         loop = asyncio.get_event_loop()
-    #         _ = loop.create_task(cancellable_engine.catch_disconnection())
-
     def get_engine(core_version: Optional[str]) -> SynthesisEngineBase:
         if core_version is None:
             return synthesis_engines[latest_core_version]
@@ -109,7 +90,7 @@ def generate_app(
             volumeScale=1,
             prePhonemeLength=0.1,
             postPhonemeLength=0.1,
-            outputSamplingRate=default_sampling_rate,
+            outputSamplingRate=default_sampling_rate[speaker],
             outputStereo=False,
             kana=create_kana(accent_phrases),
         )
@@ -148,7 +129,7 @@ def generate_app(
             volumeScale=selected_preset.volumeScale,
             prePhonemeLength=selected_preset.prePhonemeLength,
             postPhonemeLength=selected_preset.postPhonemeLength,
-            outputSamplingRate=default_sampling_rate,
+            outputSamplingRate=default_sampling_rate[selected_preset.style_id],
             outputStereo=False,
             kana=create_kana(accent_phrases),
         )
@@ -280,31 +261,6 @@ def generate_app(
         return FileResponse(f.name, media_type="audio/wav")
 
     @app.post(
-        "/cancellable_synthesis",
-        response_class=FileResponse,
-        responses={
-            200: {
-                "content": {
-                    "audio/wav": {"schema": {"type": "string", "format": "binary"}}
-                },
-            }
-        },
-        tags=["音声合成"],
-        summary="音声合成する（キャンセル可能）",
-    )
-    def cancellable_synthesis(query: AudioQuery, speaker: int, request: Request):
-        if not args.enable_cancellable_synthesis:
-            raise HTTPException(
-                status_code=404,
-                detail="実験的機能はデフォルトで無効になっています。使用するには引数を指定してください。",
-            )
-        f_name = cancellable_engine.synthesis(
-            query=query, speaker_id=speaker, request=request
-        )
-
-        return FileResponse(f_name, media_type="audio/wav")
-
-    @app.post(
         "/multi_synthesis",
         response_class=FileResponse,
         responses={
@@ -351,56 +307,6 @@ def generate_app(
                         zip_file.writestr(f"{str(i+1).zfill(3)}.wav", wav_file.read())
 
         return FileResponse(f.name, media_type="application/zip")
-
-    @app.post(
-        "/synthesis_morphing",
-        response_class=FileResponse,
-        responses={
-            200: {
-                "content": {
-                    "audio/wav": {"schema": {"type": "string", "format": "binary"}}
-                },
-            }
-        },
-        tags=["音声合成"],
-        summary="2人の話者でモーフィングした音声を合成する",
-    )
-    def _synthesis_morphing(
-        query: AudioQuery,
-        base_speaker: int,
-        target_speaker: int,
-        morph_rate: float = Query(..., ge=0.0, le=1.0),  # noqa: B008
-        core_version: Optional[str] = None,
-    ):
-        """
-        指定された2人の話者で音声を合成、指定した割合でモーフィングした音声を得ます。
-        モーフィングの割合は`morph_rate`で指定でき、0.0でベースの話者、1.0でターゲットの話者に近づきます。
-        """
-        engine = get_engine(core_version)
-
-        # 生成したパラメータはキャッシュされる
-        morph_param = synthesis_morphing_parameter(
-            engine=engine,
-            query=query,
-            base_speaker=base_speaker,
-            target_speaker=target_speaker,
-        )
-
-        morph_wave = synthesis_morphing(
-            morph_param=morph_param,
-            morph_rate=morph_rate,
-            output_stereo=query.outputStereo,
-        )
-
-        with NamedTemporaryFile(delete=False) as f:
-            soundfile.write(
-                file=f,
-                data=morph_wave,
-                samplerate=morph_param.fs,
-                format="WAV",
-            )
-
-        return FileResponse(f.name, media_type="audio/wav")
 
     @app.post(
         "/connect_waves",
@@ -488,21 +394,24 @@ def generate_app(
         else:
             raise HTTPException(status_code=404, detail="該当する話者が見つかりません")
 
+        speaker_info_dir = get_engine(core_version).speaker_info_dir
+
         try:
-            policy = Path(f"speaker_info/{speaker_uuid}/policy.md").read_text("utf-8")
+            policy = (speaker_info_dir / f"{speaker_uuid}/policy.md").read_text("utf-8")
             portrait = b64encode_str(
-                Path(f"speaker_info/{speaker_uuid}/portrait.png").read_bytes()
+                (speaker_info_dir / f"{speaker_uuid}/portrait.png").read_bytes()
             )
             style_infos = []
             for style in speaker["styles"]:
                 id = style["id"]
                 icon = b64encode_str(
-                    Path(f"speaker_info/{speaker_uuid}/icons/{id}.png").read_bytes()
+                    (speaker_info_dir / f"{speaker_uuid}/icons/{id}.png").read_bytes()
                 )
                 voice_samples = [
                     b64encode_str(
-                        Path(
-                            "speaker_info/{}/voice_samples/{}_{}.wav".format(
+                        (
+                            speaker_info_dir
+                            / "{}/voice_samples/{}_{}.wav".format(
                                 speaker_uuid, id, str(j + 1).zfill(3)
                             )
                         ).read_bytes()
@@ -537,44 +446,22 @@ def generate_app(
 
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="127.0.0.1")
-    parser.add_argument("--port", type=int, default=50021)
+    parser.add_argument("--port", type=int, default=50073)
+    parser.add_argument("--engine_dir", type=Path, default=(engine_root() / "LMengine"))
     parser.add_argument("--use_gpu", action="store_true")
-    parser.add_argument("--voicevox_dir", type=Path, default=None)
-    parser.add_argument("--voicelib_dir", type=Path, default=None, action="append")
-    parser.add_argument("--runtime_dir", type=Path, default=None, action="append")
     parser.add_argument("--enable_mock", action="store_true")
-    parser.add_argument("--enable_cancellable_synthesis", action="store_true")
-    parser.add_argument("--init_processes", type=int, default=2)
-
-    # 引数へcpu_num_threadsの指定がなければ、環境変数をロールします。
-    # 環境変数にもない場合は、Noneのままとします。
-    # VV_CPU_NUM_THREADSが空文字列でなく数値でもない場合、エラー終了します。
-    parser.add_argument(
-        "--cpu_num_threads", type=int, default=os.getenv("VV_CPU_NUM_THREADS") or None
-    )
 
     args = parser.parse_args()
 
-    cpu_num_threads: Optional[int] = args.cpu_num_threads
-
     synthesis_engines = make_synthesis_engines(
+        engine_dir=args.engine_dir,
         use_gpu=args.use_gpu,
-        voicelib_dirs=args.voicelib_dir,
-        voicevox_dir=args.voicevox_dir,
-        runtime_dirs=args.runtime_dir,
         enable_mock=args.enable_mock,
     )
     assert len(synthesis_engines) != 0, "音声合成エンジンがありません。"
     latest_core_version = str(max([LooseVersion(ver) for ver in synthesis_engines]))
-
-    cancellable_engine = None
-    # make_synthesis_engine周りの仕様が変わったので一旦cancellable機能を停止する
-    if args.enable_cancellable_synthesis:
-        # cancellable_engine = CancellableEngine(args, voicelib_dir, cpu_num_threads)
-        raise RuntimeError("現在のバージョンではcancellable機能を使用することはできません。")
 
     uvicorn.run(
         generate_app(synthesis_engines, latest_core_version),

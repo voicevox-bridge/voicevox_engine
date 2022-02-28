@@ -1,9 +1,12 @@
 from logging import getLogger
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 from pyopenjtalk import tts
 from scipy.signal import resample
+
+from voicevox_engine.utility import engine_root
 
 from ...model import AccentPhrase, AudioQuery
 from ...synthesis_engine import SynthesisEngineBase
@@ -23,7 +26,6 @@ class MockSynthesisEngine(SynthesisEngineBase):
 
         self._speakers = kwargs["speakers"]
         self._supported_devices = kwargs["supported_devices"]
-        self.default_sampling_rate = 24000
 
     @property
     def speakers(self) -> str:
@@ -32,6 +34,14 @@ class MockSynthesisEngine(SynthesisEngineBase):
     @property
     def supported_devices(self) -> Optional[str]:
         return self._supported_devices
+
+    @property
+    def speaker_info_dir(self) -> Path:
+        return engine_root() / "speaker_info"
+
+    @property
+    def default_sampling_rate(self) -> int:
+        return {i: 24000 for i in range(100)}
 
     def replace_phoneme_length(
         self, accent_phrases: List[AccentPhrase], speaker_id: int

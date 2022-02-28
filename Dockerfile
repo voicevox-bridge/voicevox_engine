@@ -20,73 +20,6 @@ RUN <<EOF
     rm -rf /var/lib/apt/lists/*
 EOF
 
-# assert VOICEVOX_CORE_VERSION >= 0.10.0 (ONNX)
-ARG VOICEVOX_CORE_VERSION=0.10.0
-ARG VOICEVOX_CORE_LIBRARY_NAME=libcore_cpu_x64.so
-RUN <<EOF
-    set -eux
-
-    # Download Core
-    wget -nv --show-progress -c -O "./core.zip" "https://github.com/VOICEVOX/voicevox_core/releases/download/${VOICEVOX_CORE_VERSION}/core.zip"
-    unzip "./core.zip"
-    rm ./core.zip
-
-    # Move Core Library to /opt/voicevox_core/
-    mkdir /opt/voicevox_core
-    mv "./core/${VOICEVOX_CORE_LIBRARY_NAME}" /opt/voicevox_core/
-
-    # Move Voice Library to /opt/voicevox_core/
-    mv ./core/*.bin ./core/metas.json /opt/voicevox_core/
-
-    # Move documents to /opt/voicevox_core/
-    mv ./core/README.txt ./core/VERSION /opt/voicevox_core/
-
-    rm -rf ./core
-
-    # Add /opt/voicevox_core to dynamic library search path
-    echo "/opt/voicevox_core" > /etc/ld.so.conf.d/voicevox_core.conf
-
-    # Update dynamic library search cache
-    ldconfig
-EOF
-
-
-# Download ONNX Runtime
-FROM ${BASE_IMAGE} AS download-onnxruntime-env
-ARG DEBIAN_FRONTEND=noninteractive
-
-WORKDIR /work
-
-RUN <<EOF
-    set -eux
-
-    apt-get update
-    apt-get install -y \
-        wget \
-        tar
-    apt-get clean
-    rm -rf /var/lib/apt/lists/*
-EOF
-
-ARG ONNXRUNTIME_URL=https://github.com/microsoft/onnxruntime/releases/download/v1.10.0/onnxruntime-linux-x64-1.10.0.tgz
-RUN <<EOF
-    set -eux
-
-    # Download ONNX Runtime
-    wget -nv --show-progress -c -O "./onnxruntime.tgz" "${ONNXRUNTIME_URL}"
-
-    # Extract ONNX Runtime to /opt/onnxruntime
-    mkdir -p /opt/onnxruntime
-    tar xf "./onnxruntime.tgz" -C "/opt/onnxruntime" --strip-components 1
-    rm ./onnxruntime.tgz
-
-    # Add /opt/onnxruntime/lib to dynamic library search path
-    echo "/opt/onnxruntime/lib" > /etc/ld.so.conf.d/onnxruntime.conf
-
-    # Update dynamic library search cache
-    ldconfig
-EOF
-
 
 # Compile Python (version locked)
 FROM ${BASE_IMAGE} AS compile-python-env
@@ -183,23 +116,18 @@ COPY --from=compile-python-env /opt/python /opt/python
 ADD ./requirements.txt /tmp/
 RUN <<EOF
     # Install requirements
-    gosu user /opt/python/bin/python3 -m pip install --upgrade pip setuptools wheel
+    # FIXME: Nuitka cannot build with setuptools>=60.7.0
+    # https://github.com/Nuitka/Nuitka/issues/1406
+    gosu user /opt/python/bin/python3 -m pip install --upgrade pip setuptools==60.6.0 wheel
     gosu user /opt/python/bin/pip3 install -r /tmp/requirements.txt
 EOF
-
-# Copy VOICEVOX Core release
-# COPY --from=download-core-env /etc/ld.so.conf.d/voicevox_core.conf /etc/ld.so.conf.d/voicevox_core.conf
-COPY --from=download-core-env /opt/voicevox_core /opt/voicevox_core
-
-# Copy ONNX Runtime
-# COPY --from=download-onnxruntime-env /etc/ld.so.conf.d/onnxruntime.conf /etc/ld.so.conf.d/onnxruntime.conf
-COPY --from=download-onnxruntime-env /opt/onnxruntime /opt/onnxruntime
 
 # Add local files
 ADD ./voicevox_engine /opt/voicevox_engine/voicevox_engine
 ADD ./docs /opt/voicevox_engine/docs
 ADD ./run.py ./generate_licenses.py ./presets.yaml ./user.dic /opt/voicevox_engine/
 ADD ./speaker_info /opt/voicevox_engine/speaker_info
+ADD ./FixBuildPlugin.py /opt/voicevox_engine/
 
 # Replace version
 ARG VOICEVOX_ENGINE_VERSION=latest
@@ -244,17 +172,15 @@ COPY --chmod=775 <<EOF /entrypoint.sh
 #!/bin/bash
 set -eux
 
-cat /opt/voicevox_core/README.txt > /dev/stderr
-
 exec "\$@"
 EOF
 
 ENTRYPOINT [ "/entrypoint.sh"  ]
-CMD [ "gosu", "user", "/opt/python/bin/python3", "./run.py", "--voicelib_dir", "/opt/voicevox_core/", "--runtime_dir", "/opt/onnxruntime/lib", "--host", "0.0.0.0" ]
+CMD [ "gosu", "user", "/opt/python/bin/python3", "./run.py", "--host", "0.0.0.0" ]
 
 # Enable use_gpu
 FROM runtime-env AS runtime-nvidia-env
-CMD [ "gosu", "user", "/opt/python/bin/python3", "./run.py", "--use_gpu", "--voicelib_dir", "/opt/voicevox_core/", "--runtime_dir", "/opt/onnxruntime/lib", "--host", "0.0.0.0" ]
+CMD [ "gosu", "user", "/opt/python/bin/python3", "./run.py", "--use_gpu", "--host", "0.0.0.0" ]
 
 # Binary build environment (common to CPU, GPU)
 FROM runtime-env AS build-env
@@ -316,58 +242,38 @@ RUN <<EOF
             --output-dir=/opt/voicevox_engine_build \
             --standalone \
             --plugin-enable=numpy \
-            --plugin-enable=multiprocessing \
+            --plugin-enable=torch \
+            --user-plugin=/opt/voicevox_engine/FixBuildPlugin.py \
+            --enable-plugin=anti-bloat \
             --follow-import-to=numpy \
             --follow-import-to=aiofiles \
             --include-package=uvicorn \
             --include-package=anyio \
             --include-package-data=pyopenjtalk \
             --include-package-data=scipy \
+            --nofollow-import-to=sklearn \
+            --include-data-file=/home/user/.local/lib/python*/site-packages/llvmlite/binding/*.so=./ \
             --include-data-file=/opt/voicevox_engine/licenses.json=./ \
             --include-data-file=/opt/voicevox_engine/presets.yaml=./ \
             --include-data-file=/opt/voicevox_engine/user.dic=./ \
-            --include-data-file=/opt/voicevox_core/*.bin=./ \
-            --include-data-file=/opt/voicevox_core/metas.json=./ \
-            --include-data-file=/opt/voicevox_core/*.so=./ \
-            --include-data-file=/opt/onnxruntime/lib/libonnxruntime.so=./ \
             --include-data-dir=/opt/voicevox_engine/speaker_info=./speaker_info \
             --follow-imports \
             --no-prefer-source-code \
+            --nofollow-import-to=torchvision \
+            --nofollow-import-to=torchaudio \
             /opt/voicevox_engine/run.py
 
-        # Copy libonnxruntime_providers_cuda.so and dependencies (CUDA/cuDNN)
-        if [ -f "/opt/onnxruntime/lib/libonnxruntime_providers_cuda.so" ]; then
-            mkdir -p /tmp/coredeps
+        mkdir /opt/voicevox_engine_build/run.dist/espnet
+        cp /home/user/.local/lib/python*/site-packages/espnet/version.txt /opt/voicevox_engine_build/run.dist/espnet/
 
-            # Copy provider libraries (libonnxruntime.so.{version} is copied by Nuitka)
-            cd /opt/onnxruntime/lib
-            cp libonnxruntime_*.so /tmp/coredeps/
-            cd -
+        mkdir -p /opt/voicevox_engine_build/run.dist/librosa/util
+        cp -r /home/user/.local/lib/python*/site-packages/librosa/util/example_data /opt/voicevox_engine_build/run.dist/librosa/util/
 
-            # assert nvidia/cuda base image
-            cd /usr/local/cuda/lib64
-            cp libcublas.so.* libcublasLt.so.* libcudart.so.* libcufft.so.* libcurand.so.* /tmp/coredeps/
-            cd -
+        mkdir /opt/voicevox_engine_build/run.dist/resampy
+        cp -r /home/user/.local/lib/python*/site-packages/resampy/data /opt/voicevox_engine_build/run.dist/resampy/
 
-            # remove unneed full version libraries
-            cd /tmp/coredeps
-            rm -f libcublas.so.*.* libcublasLt.so.*.* libcufft.so.*.* libcurand.so.*.*
-            rm -f libcudart.so.*.*.*
-            cd -
-
-            # assert nvidia/cuda base image
-            cd /usr/lib/x86_64-linux-gnu
-            cp libcudnn.so.* libcudnn_*_infer.so.* /tmp/coredeps/
-            cd -
-
-            # remove unneed full version libraries
-            cd /tmp/coredeps
-            rm -f libcudnn.so.*.* libcudnn_*_infer.so.*.*
-            cd -
-
-            mv /tmp/coredeps/* /opt/voicevox_engine_build/run.dist/
-            rm -rf /tmp/coredeps
-        fi
+        mkdir /opt/voicevox_engine_build/run.dist/jamo
+        cp -r /home/user/.local/lib/python*/site-packages/jamo/data /opt/voicevox_engine_build/run.dist/jamo/
 
         chmod +x /opt/voicevox_engine_build/run.dist/run
 EOD
