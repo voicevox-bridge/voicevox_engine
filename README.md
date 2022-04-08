@@ -1,3 +1,9 @@
+# IT ENGINE
+2022/04/08  
+いたほび(ITahobi)が作る自力合成音声のエンジン部なので「ITengine」です。  
+ 
+
+
 # VOICEVOX Bridge
 
 VOICEVOXとESPNet使用モデル（エンジン）との橋渡しをするソフトです。  
