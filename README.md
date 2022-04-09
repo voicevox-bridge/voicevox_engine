@@ -2,8 +2,13 @@
 2022/04/08  
 いたほび(ITahobi)が作る自力合成音声のエンジン部なので「ITengine」です。  
  
-
-
+2022/04/09  
+本当は昨日のうちに済ませていたのですが、記載を忘れていたので今日付けで。  
+『run.py』の  
+「parser.add_argument("--port", type=int, default=」を「49540」に。（451行目）  
+「parser.add_argument("--engine_dir", type=Path, default=」を「ITengine」に設定した。（452行目）  
+  
+  
 # VOICEVOX Bridge
 
 VOICEVOXとESPNet使用モデル（エンジン）との橋渡しをするソフトです。  
