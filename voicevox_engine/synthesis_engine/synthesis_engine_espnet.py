@@ -34,7 +34,8 @@ def query2tokens(query: AudioQuery, g2p_type: str):
                 and g2p_type == "pyopenjtalk_accent_with_pause"
             ):
                 tokens.append(accent_phrase.pause_mora.vowel)
-        return tokens
+                    # 話速用に書き換え
+        return tokens,query.speedScale
 
     elif g2p_type == "pyopenjtalk_prosody":
         # TODO: 有声、無声フラグ
@@ -246,9 +247,13 @@ class SynthesisEngineESPNet(SynthesisEngineBase):
         assert _speaker.text2speech is not None
         assert _speaker.token_id_converter is not None
 
+        # 話速用に書き換え
         with torch.no_grad():
-            tokens = query2tokens(query, _speaker.g2p)
+            tokens,speed = query2tokens(query, _speaker.g2p)
             ids = np.array(_speaker.token_id_converter.tokens2ids(tokens))
+            _speaker.text2speech.decode_conf.update({'alpha':2.1-speed,
+                              'noise_scale':0.333,
+                              'noise_scale_dur':0.333})
             wave = _speaker.text2speech(ids, **_speaker.tts_inference_call_args.dict())
             wave = wave["wav"].view(-1).cpu().numpy()
 
