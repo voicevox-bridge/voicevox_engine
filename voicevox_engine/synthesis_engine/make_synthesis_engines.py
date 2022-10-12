@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Dict
 
 from .synthesis_engine_base import SynthesisEngineBase
-from .synthesis_engine_espnet import SynthesisEngineESPNet
+from .synthesis_engine_espnet_world import SynthesisEngineESPNetWorld
 
 
 def make_synthesis_engines(
@@ -29,7 +29,7 @@ def make_synthesis_engines(
     """
     synthesis_engines = {}
     try:
-        _synthesis_engine = SynthesisEngineESPNet(
+        _synthesis_engine = SynthesisEngineESPNetWorld(
             engine_dir=engine_dir, use_gpu=use_gpu, load_all_models=load_all_models
         )
         synthesis_engines[_synthesis_engine.engine_version] = _synthesis_engine
