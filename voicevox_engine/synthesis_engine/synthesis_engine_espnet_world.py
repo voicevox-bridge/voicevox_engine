@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 import librosa.effects
 import numpy as np
+import pyworld
 import torch
 import yaml
 from espnet2.bin.tts_inference import Text2Speech
@@ -15,7 +16,6 @@ from scipy.signal import resample
 from ..model import AccentPhrase, AudioQuery, EngineConfig
 from .synthesis_engine_base import SynthesisEngineBase
 
-import pyworld
 
 def query2tokens(query: AudioQuery, g2p_type: str):
     tokens = []
@@ -88,7 +88,8 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
     Args:
         SynthesisEngineBase (_type_): _description_
     """
-    def __init__(self, engine_dir: Path, use_gpu: bool,load_all_models: bool):
+
+    def __init__(self, engine_dir: Path, use_gpu: bool, load_all_models: bool):
         self.engine_dir = engine_dir.resolve(strict=True)
         assert self.engine_dir.is_dir()
 
@@ -257,15 +258,19 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
         with torch.no_grad():
             tokens = query2tokens(query, _speaker.g2p)
             ids = np.array(_speaker.token_id_converter.tokens2ids(tokens))
-            _speaker.text2speech.decode_conf.update({'alpha':1/query.speedScale,
-                    'noise_scale':0.333,
-                    'noise_scale_dur':0.333})  # fixme: 他エンジンへの対応
+            _speaker.text2speech.decode_conf.update(
+                {
+                    "alpha": 1 / query.speedScale,
+                    "noise_scale": 0.333,
+                    "noise_scale_dur": 0.333,
+                }
+            )  # fixme: 他エンジンへの対応
             wave = _speaker.text2speech(ids, **_speaker.tts_inference_call_args.dict())
             wave = wave["wav"].view(-1).cpu().numpy()
 
         # 無音時間トリミング
         # 30dbに変更
-        wave, _ = librosa.effects.trim(wave, top_db=30)    
+        wave, _ = librosa.effects.trim(wave, top_db=30)
 
         # 開始無音
         if query.prePhonemeLength != 0:
@@ -282,9 +287,8 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
                 0,
             )
 
-
         # 終了位置を取得
-        finishblank = librosa.get_duration(y = wave, sr = query.outputSamplingRate)
+        finishblank = librosa.get_duration(y=wave, sr=query.outputSamplingRate)
 
         # 終了無音
         if query.postPhonemeLength != 0:
@@ -301,8 +305,8 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
                 0,
             )
 
-        # ここから改変
-          #WORLDで加工する
+            # ここから改変
+            # WORLDで加工する
             fs = query.outputSamplingRate
 
             # 音高
@@ -315,9 +319,13 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
             _f0, t = pyworld.dio(wave, fs)
             f0 = pyworld.stonemask(wave, _f0, t, fs)
             sp = pyworld.cheaptrick(wave, f0, t, fs)
-            ap = pyworld.d4c(wave, f0, t, fs,
+            ap = pyworld.d4c(
+                wave,
+                f0,
+                t,
+                fs,
                 # threshold=0.50   # voiced/unvoiced threshold
-                )
+            )
 
             # f0 の平均値を求め、中央からどれだけ離れているかで、抑揚を表現する
             total = 0
@@ -335,14 +343,17 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
                     f0[pos] = ave * onkou + (f - ave) * yokuyou
                 pos += 1
 
+        # 合成する
 
-        #合成する
-
-        #音高と抑揚のスライダーがデフォルト時は加工しない
+        # 音高と抑揚のスライダーがデフォルト時は加工しない
         if query.intonationScale != 1 or onkou != 1:
-             synthesized = pyworld.synthesize(f0, sp, ap, fs,
-                    )
-             wave = synthesized.astype(np.float)
+            synthesized = pyworld.synthesize(
+                f0,
+                sp,
+                ap,
+                fs,
+            )
+            wave = synthesized.astype(np.float)
 
         # 音量
         if query.volumeScale != 1:
