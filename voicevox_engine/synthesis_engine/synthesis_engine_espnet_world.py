@@ -336,7 +336,7 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
             pos = 0
             for f in f0:
                 if f != 0:
-                    f0[pos] = ave * onkou + (f - ave) * yokuyou
+                    f0[pos] = ave * onkou + (f - ave) * query.intonationScale
                 pos += 1
 
         # 合成する
