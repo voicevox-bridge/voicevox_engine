@@ -268,8 +268,7 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
             wave = _speaker.text2speech(ids, **_speaker.tts_inference_call_args.dict())
             wave = wave["wav"].view(-1).cpu().numpy()
 
-        # 無音時間トリミング
-        # 30dbに変更
+        # 閾値30dbで前後の無音をトリミング
         wave, _ = librosa.effects.trim(wave, top_db=30)
 
         # 開始無音
