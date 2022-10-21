@@ -311,9 +311,6 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
             # 音高
             onkou = (query.pitchScale * 3) + 1
 
-            # 抑揚
-            yokuyou = query.intonationScale
-
             # 基本周波数の抽出
             _f0, t = pyworld.dio(wave, fs)
             f0 = pyworld.stonemask(wave, _f0, t, fs)
