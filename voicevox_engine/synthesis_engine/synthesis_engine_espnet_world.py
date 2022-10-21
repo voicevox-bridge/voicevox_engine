@@ -287,7 +287,6 @@ class SynthesisEngineESPNetWorld(SynthesisEngineBase):
             )
 
         # 終了位置を取得
-        finishblank = librosa.get_duration(y=wave, sr=query.outputSamplingRate)
 
         # 終了無音
         if query.postPhonemeLength != 0:
