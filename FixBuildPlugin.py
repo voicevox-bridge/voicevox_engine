@@ -46,4 +46,8 @@ class NuitkaPluginFixBuild(NuitkaPluginBase):
             source_code = source_code.replace("import sklearn.decomposition", "#")
         elif module_name == "librosa.segment":
             source_code = source_code.replace("import sklearn", "#")
+        elif module_name == "tacotron_cleaner.cleaners":
+            source_code = source_code.replace("from unidecode import unidecode", "#")
+            source_code = source_code.replace("def convert_to_ascii(text):", "#")
+            source_code = source_code.replace("return unidecode(text)", "#")
         return source_code
