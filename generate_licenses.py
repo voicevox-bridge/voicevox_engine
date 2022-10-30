@@ -161,6 +161,9 @@ def generate_licenses() -> List[License]:
         if license.text == "UNKNOWN":
             if license.name.lower() == "core" and license.version == "0.0.0":
                 continue
+            if license.name.lower() in ["unidecode", "distance"]:
+                # build.ymlで除外設定しているため反映させない
+                continue
             elif license.name.lower() == "nuitka":
                 with urllib.request.urlopen(
                     "https://raw.githubusercontent.com/Nuitka/Nuitka/develop/LICENSE.txt"
