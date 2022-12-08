@@ -19,7 +19,7 @@ jobs:
   build-linux:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-20.04]
         tag:
           - build-cpu-ubuntu18.04
           - build-nvidia-ubuntu18.04
@@ -347,7 +347,7 @@ jobs:
   upload-to-release:
     if: github.event.release.tag_name != ''
     needs: [build-linux, build-windows]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         artifact_name:
