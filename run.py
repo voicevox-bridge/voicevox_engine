@@ -665,9 +665,15 @@ def generate_app(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+<<<<<<< HEAD
     parser.add_argument("--engine_dir", type=Path, default=(engine_root() / "LMengine"))
     parser.add_argument("--host", type=str, default="127.0.0.1")
     parser.add_argument("--port", type=int, default=50073)
+=======
+    parser.add_argument("--engine_dir", type=Path, default=(engine_root() / "ITengine"))
+    parser.add_argument("--host", type=str, default="127.0.0.1")
+    parser.add_argument("--port", type=int, default=49540)
+>>>>>>> cef9ac4 (vvb/masterにLMengine-0.1.5を上書き、エンジン名とポート番号を検索しそれぞれITengine、49540に置換)
     parser.add_argument("--use_gpu", action="store_true")
     parser.add_argument("--enable_mock", action="store_true")
     parser.add_argument("--load_all_models", action="store_true")
