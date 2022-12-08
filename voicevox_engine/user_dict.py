@@ -40,9 +40,23 @@ def write_to_json(user_dict: Dict[str, UserDictWord], user_dict_path: Path):
     user_dict_path.write_text(user_dict_json, encoding="utf-8")
 
 
+def user_dict_startup_processing(
+    default_dict_path: Path = default_dict_path,
+    compiled_dict_path: Path = compiled_dict_path,
+):
+    pyopenjtalk.create_user_dict(
+        str(default_dict_path.resolve(strict=True)),
+        str(compiled_dict_path.resolve()),
+    )
+    pyopenjtalk.set_user_dict(str(compiled_dict_path.resolve(strict=True)))
+    if user_dict_path.is_file():
+        update_dict(
+            default_dict_path=default_dict_path, compiled_dict_path=compiled_dict_path
+        )
+
+
 def update_dict(
     default_dict_path: Path = default_dict_path,
-    user_dict_path: Path = user_dict_path,
     compiled_dict_path: Path = compiled_dict_path,
 ):
     with NamedTemporaryFile(encoding="utf-8", mode="w", delete=False) as f:
@@ -53,7 +67,7 @@ def update_dict(
         if default_dict == default_dict.rstrip():
             default_dict += "\n"
         f.write(default_dict)
-        user_dict = read_dict(user_dict_path=user_dict_path)
+        user_dict = read_dict()
         for word_uuid in user_dict:
             word = user_dict[word_uuid]
             f.write(
@@ -171,7 +185,7 @@ def apply_word(
     word_uuid = str(uuid4())
     user_dict[word_uuid] = word
     write_to_json(user_dict, user_dict_path)
-    update_dict(user_dict_path=user_dict_path, compiled_dict_path=compiled_dict_path)
+    update_dict(compiled_dict_path=compiled_dict_path)
     return word_uuid
 
 
@@ -197,7 +211,7 @@ def rewrite_word(
         raise HTTPException(status_code=422, detail="UUIDに該当するワードが見つかりませんでした")
     user_dict[word_uuid] = word
     write_to_json(user_dict, user_dict_path)
-    update_dict(user_dict_path=user_dict_path, compiled_dict_path=compiled_dict_path)
+    update_dict(compiled_dict_path=compiled_dict_path)
 
 
 def delete_word(
@@ -210,7 +224,7 @@ def delete_word(
         raise HTTPException(status_code=422, detail="IDに該当するワードが見つかりませんでした")
     del user_dict[word_uuid]
     write_to_json(user_dict, user_dict_path)
-    update_dict(user_dict_path=user_dict_path, compiled_dict_path=compiled_dict_path)
+    update_dict(compiled_dict_path=compiled_dict_path)
 
 
 def import_user_dict(
@@ -249,9 +263,7 @@ def import_user_dict(
         new_dict = {**dict_data, **old_dict}
     write_to_json(user_dict=new_dict, user_dict_path=user_dict_path)
     update_dict(
-        default_dict_path=default_dict_path,
-        user_dict_path=user_dict_path,
-        compiled_dict_path=compiled_dict_path,
+        default_dict_path=default_dict_path, compiled_dict_path=compiled_dict_path
     )
 
 
