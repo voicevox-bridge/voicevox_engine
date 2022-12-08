@@ -447,9 +447,15 @@ def generate_app(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--host", type=str, default="127.0.0.1")                            #何か由縁が欲しかったのでASCIIコードを利用しました。
-    parser.add_argument("--port", type=int, default=49540)                                  #I=0x49→49、T=0x54→54、末尾には初めて指定するポートなので一番若い0をあてがった。
-    parser.add_argument("--engine_dir", type=Path, default=(engine_root() / "ITengine"))    #ITengineを指定
+    parser.add_argument(
+        "--host", type=str, default="127.0.0.1"
+    )  # 何か由縁が欲しかったのでASCIIコードを利用しました。
+    parser.add_argument(
+        "--port", type=int, default=49540
+    )  # I=0x49→49、T=0x54→54、末尾には初めて指定するポートなので一番若い0をあてがった。
+    parser.add_argument(
+        "--engine_dir", type=Path, default=(engine_root() / "ITengine")
+    )  # ITengineを指定
     parser.add_argument("--use_gpu", action="store_true")
     parser.add_argument("--enable_mock", action="store_true")
 
