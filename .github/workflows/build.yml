@@ -284,6 +284,9 @@ jobs:
             --follow-imports \
             --nofollow-import-to=torchvision \
             --nofollow-import-to=torchaudio \
+            --nofollow-import-to=distance \
+            --nofollow-import-to=unidecode \
+            --follow-imports \
             --no-prefer-source-code \
             run.py
 

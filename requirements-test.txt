@@ -229,7 +229,7 @@ smmap==5.0.0
     # via gitdb
 sniffio==1.2.0
     # via anyio
-soundfile==0.10.3.post1
+soundfile @ git+https://github.com/bastibe/python-soundfile@029921aae4d59acf61c6f7527dbd2af2880d6286
     # via
     #   -r requirements.in
     #   espnet

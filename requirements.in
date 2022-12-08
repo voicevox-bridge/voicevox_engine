@@ -3,9 +3,9 @@ fastapi
 python-multipart
 uvicorn
 aiofiles
-soundfile
 scipy
 PyYAML
 pyworld
 git+https://github.com/VOICEVOX/pyopenjtalk@a85521a0a0f298f08d9e9b24987b3c77eb4aaff5#egg=pyopenjtalk
 git+https://github.com/voicevox-bridge/espnet@d7633eb0eec9b00646847abdee3d34e5a62d2dea
+git+https://github.com/bastibe/python-soundfile@029921aae4d59acf61c6f7527dbd2af2880d6286

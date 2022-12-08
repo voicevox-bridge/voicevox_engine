@@ -261,6 +261,8 @@ RUN <<EOF
             --no-prefer-source-code \
             --nofollow-import-to=torchvision \
             --nofollow-import-to=torchaudio \
+            --nofollow-import-to=distance \
+            --nofollow-import-to=unidecode \
             /opt/voicevox_engine/run.py
 
         mkdir /opt/voicevox_engine_build/run.dist/espnet
