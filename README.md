@@ -1,3 +1,8 @@
+このリポジトリはメンテナンスされていません。  
+後継のソフトウェアである、[Bridge Plugin](https://github.com/voicevox-bridge/bridge-plugin)の使用をご検討ください。
+
+---
+
 # VOICEVOX ENGINE
 
 [![build](https://github.com/VOICEVOX/voicevox_engine/actions/workflows/build.yml/badge.svg)](https://github.com/VOICEVOX/voicevox_engine/actions/workflows/build.yml)
